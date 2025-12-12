@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Facturas | Sistema de Facturación</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg bg-white border-bottom">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" href="index.html">Sistema de Facturación</a>
+      <div class="navbar-nav">
+        <a class="nav-link" href="clientes.html">Clientes</a>
+        <a class="nav-link" href="productos.html">Productos</a>
+        <a class="nav-link active" href="facturas.html">Facturas</a>
+        <a class="nav-link" href="reporte.html">Reportes</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <div>
+        <h3 class="mb-0">Facturación</h3>
+        <small class="text-muted">Crear factura (IVA 15%)</small>
+      </div>
+      <div id="loading" class="d-none small text-muted">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Procesando…
+      </div>
+    </div>
+
+    <div id="alertBox" class="alert d-none" role="alert"></div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Cliente</label>
+            <select id="clienteSelect" class="form-select"></select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label">Fecha</label>
+            <input id="fechaInput" type="date" class="form-control">
+          </div>
+          <div class="col-6 col-md-3 text-md-end">
+            <button id="btnLimpiar" class="btn btn-outline-secondary w-100">Limpiar carrito</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Agregar producto</h5>
+
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Producto</label>
+            <select id="productoSelect" class="form-select"></select>
+            <div class="form-text" id="productoInfo">—</div>
+          </div>
+
+          <div class="col-6 col-md-2">
+            <label class="form-label">Cantidad</label>
+            <input id="cantidadInput" type="number" class="form-control" min="1" value="1">
+          </div>
+
+          <div class="col-6 col-md-2">
+            <button id="btnAgregar" class="btn btn-primary w-100">Agregar</button>
+          </div>
+
+          <div class="col-12 col-md-2">
+            <button id="btnGuardar" class="btn btn-success w-100">Guardar factura</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12 col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0">Detalle</h5>
+              <span class="text-muted small">Items: <b id="itemsCount">0</b></span>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Producto</th>
+                    <th class="text-end" style="width:110px;">Precio</th>
+                    <th style="width:140px;">Cantidad</th>
+                    <th class="text-end" style="width:130px;">Total</th>
+                    <th class="text-end" style="width:110px;">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyCarrito"></tbody>
+              </table>
+            </div>
+
+            <div id="emptyCart" class="text-center text-muted py-4 d-none">
+              Aún no agregas productos al carrito.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="mb-3">Totales</h5>
+
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Subtotal</span>
+              <span id="subtotalTxt" class="fw-semibold">$0.00</span>
+            </div>
+
+            <div class="d-flex justify-content-between mt-2">
+              <span class="text-muted">IVA (15%)</span>
+              <span id="ivaTxt" class="fw-semibold">$0.00</span>
+            </div>
+
+            <hr>
+
+            <div class="d-flex justify-content-between">
+              <span class="fw-semibold">Total</span>
+              <span id="totalTxt" class="fw-bold">$0.00</span>
+            </div>
+
+            <div class="d-grid mt-3">
+              <button id="btnGuardar2" class="btn btn-success">Guardar factura</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0">Últimas facturas</h5>
+          <button id="btnRecargarFacturas" class="btn btn-sm btn-outline-secondary">Actualizar</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Número</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th class="text-end">Subtotal</th>
+                <th class="text-end">IVA</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyUltimas"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyFact" class="text-center text-muted py-3 d-none">
+          No hay facturas registradas.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="app.js?v=2"></script>
+
+  <script>
+    const IVA_RATE = 0.15;
+
+    const loading = document.getElementById("loading");
+    const alertBox = document.getElementById("alertBox");
+
+    const clienteSelect = document.getElementById("clienteSelect");
+    const fechaInput = document.getElementById("fechaInput");
+
+    const productoSelect = document.getElementById("productoSelect");
+    const productoInfo = document.getElementById("productoInfo");
+    const cantidadInput = document.getElementById("cantidadInput");
+
+    const tbodyCarrito = document.getElementById("tbodyCarrito");
+    const emptyCart = document.getElementById("emptyCart");
+    const itemsCount = document.getElementById("itemsCount");
+
+    const subtotalTxt = document.getElementById("subtotalTxt");
+    const ivaTxt = document.getElementById("ivaTxt");
+    const totalTxt = document.getElementById("totalTxt");
+
+    const tbodyUltimas = document.getElementById("tbodyUltimas");
+    const emptyFact = document.getElementById("emptyFact");
+
+    let clientes = [];
+    let productos = [];
+    let carrito = []; // {producto_id, nombre, precio, cantidad}
+
+    function showLoading(on){ loading.classList.toggle("d-none", !on); }
+    function showAlert(msg, type="success"){
+      alertBox.className = `alert alert-${type}`;
+      alertBox.textContent = msg;
+      alertBox.classList.remove("d-none");
+      setTimeout(()=>alertBox.classList.add("d-none"), 3000);
+    }
+
+    function asArray(x){
+      return Array.isArray(x) ? x : (Array.isArray(x?.data) ? x.data : []);
+    }
+
+    function hoyISO(){
+      const d=new Date();
+      const yyyy=d.getFullYear();
+      const mm=String(d.getMonth()+1).padStart(2,"0");
+      const dd=String(d.getDate()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function renderProductoInfo(){
+      const pid=Number(productoSelect.value);
+      const p=productos.find(x=>Number(x.id)===pid);
+      if(!p){ productoInfo.textContent="—"; return; }
+      productoInfo.textContent = `Precio: ${money(p.precio)} | Stock: ${p.stock ?? 0} | Estado: ${Number(p.activo)===1?"Activo":"Inactivo"}`;
+    }
+
+    function renderCarrito(){
+      itemsCount.textContent = carrito.length;
+
+      tbodyCarrito.innerHTML = carrito.map((it, idx)=>{
+        const totalLinea = (Number(it.precio)||0) * (Number(it.cantidad)||0);
+        return `
+          <tr>
+            <td><div class="fw-semibold">${it.nombre ?? ""}</div><div class="text-muted small">ID: ${it.producto_id}</div></td>
+            <td class="text-end">${money(it.precio)}</td>
+            <td><input type="number" min="1" class="form-control form-control-sm" value="${it.cantidad}" onchange="changeQty(${idx}, this.value)"></td>
+            <td class="text-end fw-semibold">${money(totalLinea)}</td>
+            <td class="text-end"><button class="btn btn-sm btn-outline-danger" onclick="removeItem(${idx})">Quitar</button></td>
+          </tr>
+        `;
+      }).join("");
+
+      emptyCart.classList.toggle("d-none", carrito.length !== 0);
+
+      const subtotal = carrito.reduce((acc,it)=>acc + (Number(it.precio)||0)*(Number(it.cantidad)||0), 0);
+      const iva = subtotal * IVA_RATE;
+      const total = subtotal + iva;
+
+      subtotalTxt.textContent = money(subtotal);
+      ivaTxt.textContent = money(iva);
+      totalTxt.textContent = money(total);
+    }
+
+    window.removeItem = (idx)=>{ carrito.splice(idx,1); renderCarrito(); }
+    window.changeQty = (idx,val)=>{ carrito[idx].cantidad = Math.max(1, Number(val||1)); renderCarrito(); }
+
+    function llenarClientes(){
+      if(clientes.length === 0){
+        clienteSelect.innerHTML = `<option value="">(No hay clientes)</option>`;
+        return;
+      }
+      clienteSelect.innerHTML = clientes.map(c=>`<option value="${c.id}">${c.nombres ?? ("Cliente #" + c.id)}</option>`).join("");
+    }
+
+    function llenarProductos(){
+      if(productos.length === 0){
+        productoSelect.innerHTML = `<option value="">(No hay productos)</option>`;
+        productoInfo.textContent = "—";
+        return;
+      }
+
+      const list = [...productos].sort((a,b)=>Number(b.activo)-Number(a.activo));
+      productoSelect.innerHTML = list.map(p=>{
+        const tag = Number(p.activo)===1 ? "" : " (Inactivo)";
+        return `<option value="${p.id}">${p.nombre ?? ("Producto #" + p.id)} - ${money(p.precio)}${tag}</option>`;
+      }).join("");
+
+      renderProductoInfo();
+    }
+
+    async function cargarCombos(){
+      showLoading(true);
+      try{
+        const respClientes = await getJSON("c=cliente&a=index");
+        console.log("RESP CLIENTES 👉", respClientes)
+        const respProductos = await getJSON("c=producto&a=index");
+
+        clientes  = asArray(respClientes);
+        productos = asArray(respProductos);
+
+        llenarClientes();
+        llenarProductos();
+        fechaInput.value = hoyISO();
+      }catch(e){
+        showAlert(e.message || "Error cargando datos", "danger");
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    document.getElementById("btnAgregar").onclick = ()=>{
+      const producto_id = Number(productoSelect.value);
+      const cantidad = Number(cantidadInput.value);
+
+      if(!producto_id || cantidad<=0){ showAlert("Selecciona producto y cantidad válida.", "warning"); return; }
+
+      const p = productos.find(x=>Number(x.id)===producto_id);
+      if(!p){ showAlert("Producto no encontrado.", "danger"); return; }
+      if(Number(p.activo)!==1){ showAlert("Producto INACTIVO. Actívalo en Productos.", "warning"); return; }
+
+      const existe = carrito.find(x=>x.producto_id===producto_id);
+      if(existe) existe.cantidad += cantidad;
+      else carrito.push({ producto_id, nombre:(p.nombre ?? ""), precio:Number(p.precio ?? 0), cantidad });
+
+      cantidadInput.value = 1;
+      renderCarrito();
+    };
+
+    document.getElementById("btnLimpiar").onclick = ()=>{
+      carrito = [];
+      renderCarrito();
+      showAlert("Carrito limpiado", "secondary");
+    };
+
+    async function cargarUltimas(){
+      try{
+        const resp = await getJSON("c=factura&a=index");
+        const facturas = asArray(resp);
+
+        const list = facturas.slice(0,10);
+        tbodyUltimas.innerHTML = list.map(f=>`
+          <tr>
+            <td class="fw-semibold">${f.numero ?? ""}</td>
+            <td>${f.fecha ?? ""}</td>
+            <td>${f.cliente ?? ""}</td>
+            <td class="text-end">${money(f.subtotal ?? 0)}</td>
+            <td class="text-end">${money(f.iva ?? 0)}</td>
+            <td class="text-end fw-bold">${money(f.total ?? 0)}</td>
+          </tr>
+        `).join("");
+
+        emptyFact.classList.toggle("d-none", list.length !== 0);
+      }catch(e){
+        showAlert(e.message || "Error cargando facturas", "danger");
+      }
+    }
+
+    async function guardarFactura(){
+      const cliente_id = Number(clienteSelect.value);
+      const fecha = fechaInput.value;
+
+      if(!cliente_id){ showAlert("Selecciona un cliente.", "warning"); return; }
+      if(!fecha){ showAlert("Selecciona fecha.", "warning"); return; }
+      if(carrito.length===0){ showAlert("Agrega al menos un producto.", "warning"); return; }
+
+      const payload = {
+        cliente_id,
+        fecha,
+        items: carrito.map(it=>({ producto_id: it.producto_id, cantidad: it.cantidad }))
+      };
+
+      showLoading(true);
+      try{
+        const r = await postJSON("c=factura&a=create", payload);
+        showAlert(`Factura guardada: ${r.numero ?? ""} | Total: ${money(r.total ?? 0)}`, "success");
+        carrito = [];
+        renderCarrito();
+        await cargarUltimas();
+      }catch(e){
+        showAlert(e.message || "Error guardando factura", "danger");
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    document.getElementById("btnGuardar").onclick = guardarFactura;
+    document.getElementById("btnGuardar2").onclick = guardarFactura;
+    document.getElementById("btnRecargarFacturas").onclick = cargarUltimas;
+    productoSelect.addEventListener("change", renderProductoInfo);
+
+    (async ()=>{
+      await cargarCombos();
+      renderCarrito();
+      await cargarUltimas();
+    })();
+  </script>
+</body>
+</html>

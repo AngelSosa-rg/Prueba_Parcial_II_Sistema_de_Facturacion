@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reportes | Sistema de Facturación</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" href="index.html">Sistema de Facturación</a>
+      <div class="navbar-nav">
+        <a class="nav-link" href="clientes.html">Clientes</a>
+        <a class="nav-link" href="productos.html">Productos</a>
+        <a class="nav-link" href="facturas.html">Facturas</a>
+        <a class="nav-link active" href="reporte.html">Reportes</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <div>
+        <h3 class="mb-0">Reportes</h3>
+        <small class="text-muted">Registro de Facturas Generadas</small>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <span id="loading" class="d-none small text-muted">
+          <span class="spinner-border spinner-border-sm me-2"></span>
+          Cargando…
+        </span>
+        <button id="btnRefrescar" class="btn btn-outline-secondary">Refrescar</button>
+      </div>
+    </div>
+
+    <div id="alertBox" class="alert d-none" role="alert"></div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="row g-2 align-items-center">
+          <div class="col-12 col-md-6">
+            <input id="txtBuscar" class="form-control" placeholder="Buscar por nombre…">
+          </div>
+          <div class="col-6 col-md-3">
+            <select id="selOrden" class="form-select">
+              <option value="totalDesc">Total (↓)</option>
+              <option value="factDesc"># Facturas (↓)</option>
+              <option value="nombre">Nombre (A-Z)</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3 text-md-end">
+            <span class="text-muted small">Clientes: <b id="lblCount">0</b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Cliente</th>
+                <th class="text-end" style="width:120px;"># Facturas</th>
+                <th class="text-end" style="width:150px;">Subtotal</th>
+                <th class="text-end" style="width:150px;">IVA</th>
+                <th class="text-end" style="width:160px;">Total</th>
+                <th class="text-end" style="width:170px;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="text-center text-muted py-4 d-none">
+          No hay datos para mostrar.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Facturas del cliente -->
+  <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="modalTitle" class="modal-title">Facturas del cliente</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div id="detalleLoading" class="d-none small text-muted mb-2">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Cargando detalle…
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Número</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                  <th class="text-end">Subtotal</th>
+                  <th class="text-end">IVA</th>
+                  <th class="text-end">Total</th>
+                  <th class="text-end" style="width:110px;">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyDetalle"></tbody>
+            </table>
+          </div>
+
+          <div id="emptyDetalle" class="text-center text-muted py-3 d-none">
+            Este cliente no tiene facturas registradas.
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Vista bonita de factura -->
+  <div class="modal fade" id="modalFactura" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="facturaTitle" class="modal-title">Factura</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div id="facturaLoading" class="d-none small text-muted mb-2">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Cargando factura…
+          </div>
+
+          <div id="facturaBox" class="border rounded p-3 bg-white">
+            <!-- render -->
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <a id="btnPdf" class="btn btn-outline-dark" target="_blank">Descargar PDF</a>
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="app.js?v=2"></script>
+
+  <script>
+    const loading = document.getElementById("loading");
+    const alertBox = document.getElementById("alertBox");
+    const txtBuscar = document.getElementById("txtBuscar");
+    const selOrden = document.getElementById("selOrden");
+    const lblCount = document.getElementById("lblCount");
+
+    const tbody = document.getElementById("tbody");
+    const emptyState = document.getElementById("emptyState");
+
+    const modalDetalle = new bootstrap.Modal(document.getElementById("modalDetalle"));
+    const modalTitle = document.getElementById("modalTitle");
+
+    const detalleLoading = document.getElementById("detalleLoading");
+    const tbodyDetalle = document.getElementById("tbodyDetalle");
+    const emptyDetalle = document.getElementById("emptyDetalle");
+
+    const modalFactura = new bootstrap.Modal(document.getElementById("modalFactura"));
+    const facturaTitle = document.getElementById("facturaTitle");
+    const facturaLoading = document.getElementById("facturaLoading");
+    const facturaBox = document.getElementById("facturaBox");
+    const btnPdf = document.getElementById("btnPdf");
+
+    let resumen = [];
+
+    function showLoading(on){ loading.classList.toggle("d-none", !on); }
+    function showAlert(msg, type="success"){
+      alertBox.className = `alert alert-${type}`;
+      alertBox.textContent = msg;
+      alertBox.classList.remove("d-none");
+      setTimeout(()=>alertBox.classList.add("d-none"), 3000);
+    }
+
+    function asArray(x){
+      return Array.isArray(x) ? x : (Array.isArray(x?.data) ? x.data : []);
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+
+    function render(){
+      const q = (txtBuscar.value||"").trim().toLowerCase();
+      const ord = selOrden.value;
+
+      let list = [...resumen];
+      if(q) list = list.filter(x=>String(x.nombres??"").toLowerCase().includes(q));
+
+      if(ord==="totalDesc") list.sort((a,b)=>Number(b.total ?? 0)-Number(a.total ?? 0));
+      if(ord==="factDesc") list.sort((a,b)=>Number(b.cantidad_facturas ?? 0)-Number(a.cantidad_facturas ?? 0));
+      if(ord==="nombre") list.sort((a,b)=>String(a.nombres ?? "").localeCompare(String(b.nombres ?? "")));
+
+      lblCount.textContent = list.length;
+
+      tbody.innerHTML = list.map(x=>`
+        <tr>
+          <td class="fw-semibold">${x.nombres ?? ""}</td>
+          <td class="text-end">${x.cantidad_facturas ?? 0}</td>
+          <td class="text-end">${money(x.subtotal ?? 0)}</td>
+          <td class="text-end">${money(x.iva ?? 0)}</td>
+          <td class="text-end fw-bold">${money(x.total ?? 0)}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary" onclick="verFacturas(${x.id}, '${escapeHtml(x.nombres ?? "")}')">
+              Ver facturas
+            </button>
+          </td>
+        </tr>
+      `).join("");
+
+      emptyState.classList.toggle("d-none", list.length !== 0);
+    }
+
+    async function cargarResumen(){
+      showLoading(true);
+      try{
+        const resp = await getJSON("c=reporte&a=resumen");
+        resumen = asArray(resp);
+        render();
+      }catch(e){
+        showAlert(e.message || "Error cargando reporte", "danger");
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    async function cargarDetalle(clienteId){
+      detalleLoading.classList.remove("d-none");
+      tbodyDetalle.innerHTML = "";
+      emptyDetalle.classList.add("d-none");
+
+      try{
+        const resp = await getJSON(`c=reporte&a=detalle&cliente_id=${clienteId}`);
+        const data = asArray(resp);
+
+        tbodyDetalle.innerHTML = data.map(f=>`
+          <tr>
+            <td class="fw-semibold">${f.numero ?? ""}</td>
+            <td>${f.fecha ?? ""}</td>
+            <td>${f.estado ?? ""}</td>
+            <td class="text-end">${money(f.subtotal ?? 0)}</td>
+            <td class="text-end">${money(f.iva ?? 0)}</td>
+            <td class="text-end fw-bold">${money(f.total ?? 0)}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-primary" onclick="verFactura(${Number(f.id)})">Ver</button>
+            </td>
+          </tr>
+        `).join("");
+
+        emptyDetalle.classList.toggle("d-none", data.length !== 0);
+      }catch(e){
+        showAlert(e.message || "Error cargando detalle", "danger");
+      }finally{
+        detalleLoading.classList.add("d-none");
+      }
+    }
+
+    window.verFacturas = async (clienteId, clienteNombre)=>{
+      modalTitle.textContent = `Facturas de: ${clienteNombre}`;
+      modalDetalle.show();
+      await cargarDetalle(clienteId);
+    };
+
+    window.verFactura = async (facturaId)=>{
+      if(!facturaId || facturaId <= 0){
+        showAlert("Factura inválida (id vacío). Revisa que detalle devuelva el campo id.", "warning");
+        return;
+      }
+
+      facturaLoading.classList.remove("d-none");
+      facturaBox.innerHTML = "";
+      facturaTitle.textContent = "Factura";
+
+      // IMPORTANTE: usa ruta ABSOLUTA para que funcione desde cualquier carpeta
+      btnPdf.href = `/Sistema_de_factura_electronica/Backend/public/index.php?c=factura&a=pdf&id=${facturaId}`;
+
+      modalFactura.show();
+
+      try{
+        const resp = await getJSON(`c=factura&a=show&id=${facturaId}`);
+        const h = resp?.header || {};
+        const items = asArray(resp?.items);
+
+        facturaTitle.textContent = `Factura ${h.numero ?? ("#" + facturaId)}`;
+
+        const rows = items.map(it => `
+          <tr>
+            <td>${escapeHtml((it.codigo ?? "") + " " + (it.nombre ?? ""))}</td>
+            <td class="text-end">${it.cantidad ?? 0}</td>
+            <td class="text-end">${money(it.precio_unitario ?? 0)}</td>
+            <td class="text-end fw-semibold">${money(it.total ?? 0)}</td>
+          </tr>
+        `).join("");
+
+        facturaBox.innerHTML = `
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h5 class="mb-1">FACTURA</h5>
+              <div class="text-muted small">N° ${escapeHtml(h.numero ?? "")} • ${escapeHtml(h.fecha ?? "")}</div>
+            </div>
+            <div class="text-end">
+              <span class="badge text-bg-success">${escapeHtml(h.estado ?? "")}</span>
+            </div>
+          </div>
+
+          <hr class="my-3"/>
+
+          <div class="row g-2">
+            <div class="col-12 col-md-6">
+              <div class="fw-semibold">Cliente</div>
+              <div>${escapeHtml(h.nombres ?? "")}</div>
+              <div class="text-muted small">
+                ${(h.cedula ? `Cédula: ${escapeHtml(h.cedula)}<br>` : "")}
+                ${(h.email ? `Email: ${escapeHtml(h.email)}<br>` : "")}
+                ${(h.telefono ? `Tel: ${escapeHtml(h.telefono)}<br>` : "")}
+                ${(h.direccion ? `Dir: ${escapeHtml(h.direccion)}` : "")}
+              </div>
+            </div>
+            <div class="col-12 col-md-6 text-md-end">
+              <div class="fw-semibold">Totales</div>
+              <div>Subtotal: <b>${money(h.subtotal ?? 0)}</b></div>
+              <div>IVA (15%): <b>${money(h.iva ?? 0)}</b></div>
+              <div class="fs-5">TOTAL: <b>${money(h.total ?? 0)}</b></div>
+            </div>
+          </div>
+
+          <hr class="my-3"/>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Producto</th>
+                  <th class="text-end">Cant</th>
+                  <th class="text-end">P.Unit</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>${rows || `<tr><td colspan="4" class="text-center text-muted">Sin items</td></tr>`}</tbody>
+            </table>
+          </div>
+        `;
+      }catch(e){
+        facturaBox.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(e.message || "Error cargando factura")}</div>`;
+      }finally{
+        facturaLoading.classList.add("d-none");
+      }
+    };
+
+    document.getElementById("btnRefrescar").onclick = cargarResumen;
+    txtBuscar.addEventListener("input", render);
+    selOrden.addEventListener("change", render);
+
+    cargarResumen();
+  </script>
+</body>
+</html>

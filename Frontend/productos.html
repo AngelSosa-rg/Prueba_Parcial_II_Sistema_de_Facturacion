@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Productos | Sistema de Facturación</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg bg-white border-bottom">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" href="index.html">Sistema de Facturación</a>
+      <div class="navbar-nav">
+        <a class="nav-link" href="clientes.html">Clientes</a>
+        <a class="nav-link active" href="productos.html">Productos</a>
+        <a class="nav-link" href="facturas.html">Facturas</a>
+        <a class="nav-link" href="reporte.html">Reportes</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <div>
+        <h3 class="mb-0">Productos</h3>
+        <small class="text-muted">Registro de Productos</small>
+      </div>
+      <div class="d-flex gap-2">
+        <button id="btnNuevo" class="btn btn-primary">+ Nuevo</button>
+        <button id="btnRefrescar" class="btn btn-outline-secondary">Refrescar</button>
+      </div>
+    </div>
+
+    <div id="alertBox" class="alert d-none" role="alert"></div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="row g-2 align-items-center">
+          <div class="col-12 col-md-6">
+            <input id="txtBuscar" class="form-control" placeholder="Buscar por código o nombre…">
+          </div>
+          <div class="col-6 col-md-3">
+            <select id="selEstado" class="form-select">
+              <option value="todos">Todos</option>
+              <option value="1">Solo activos</option>
+              <option value="0">Solo inactivos</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <select id="selOrden" class="form-select">
+              <option value="nuevo">Más recientes</option>
+              <option value="nombre">Nombre (A-Z)</option>
+              <option value="precioAsc">Precio (↑)</option>
+              <option value="precioDesc">Precio (↓)</option>
+              <option value="stockDesc">Stock (↓)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted small">Total: <b id="lblCount">0</b></span>
+          <span id="loading" class="d-none small text-muted">
+            <span class="spinner-border spinner-border-sm me-1"></span> Cargando…
+          </span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:130px;">Código</th>
+                <th>Nombre</th>
+                <th class="text-end" style="width:140px;">Precio</th>
+                <th class="text-end" style="width:110px;">Stock</th>
+                <th style="width:120px;">Estado</th>
+                <th class="text-end" style="width:220px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="text-center text-muted py-4 d-none">
+          No hay productos para mostrar.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal fade" id="modalProducto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="modalTitle" class="modal-title">Nuevo producto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <form class="row g-3">
+            <input type="hidden" id="id">
+
+            <div class="col-md-4">
+              <label class="form-label">Código</label>
+              <input id="codigo" class="form-control" placeholder="P-001" required>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label">Nombre</label>
+              <input id="nombre" class="form-control" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Precio</label>
+              <input id="precio" class="form-control" type="number" step="0.01" min="0" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Stock</label>
+              <input id="stock" class="form-control" type="number" min="0" value="0">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Estado</label>
+              <select id="activo" class="form-select">
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <div class="alert alert-warning d-none" id="formWarn"></div>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button id="btnGuardar" class="btn btn-primary">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="app.js?v=2"></script>
+  <script>
+    const loading = document.getElementById("loading");
+    const alertBox = document.getElementById("alertBox");
+
+    const txtBuscar = document.getElementById("txtBuscar");
+    const selEstado = document.getElementById("selEstado");
+    const selOrden = document.getElementById("selOrden");
+    const lblCount = document.getElementById("lblCount");
+
+    const tbody = document.getElementById("tbody");
+    const emptyState = document.getElementById("emptyState");
+
+    const modal = new bootstrap.Modal(document.getElementById("modalProducto"));
+    const modalTitle = document.getElementById("modalTitle");
+    const formWarn = document.getElementById("formWarn");
+
+    const id = document.getElementById("id");
+    const codigo = document.getElementById("codigo");
+    const nombre = document.getElementById("nombre");
+    const precio = document.getElementById("precio");
+    const stock = document.getElementById("stock");
+    const activo = document.getElementById("activo");
+
+    let productos = [];
+
+    function showLoading(on){ loading.classList.toggle("d-none", !on); }
+    function showAlert(msg, type="success"){
+      alertBox.className = `alert alert-${type}`;
+      alertBox.textContent = msg;
+      alertBox.classList.remove("d-none");
+      setTimeout(()=>alertBox.classList.add("d-none"), 2800);
+    }
+    function warn(msg){
+      formWarn.textContent = msg;
+      formWarn.classList.remove("d-none");
+    }
+    function clearWarn(){
+      formWarn.textContent = "";
+      formWarn.classList.add("d-none");
+    }
+    function resetForm(){
+      id.value=""; codigo.value=""; nombre.value=""; precio.value=""; stock.value="0"; activo.value="1"; clearWarn();
+    }
+    function estadoBadge(v){
+      return Number(v)===1
+        ? `<span class="badge text-bg-success">Activo</span>`
+        : `<span class="badge text-bg-secondary">Inactivo</span>`;
+    }
+
+    function applyFilters(){
+      const q = (txtBuscar.value||"").toLowerCase().trim();
+      const est = selEstado.value;
+      const ord = selOrden.value;
+
+      let list = [...productos];
+
+      if(est!=="todos") list = list.filter(p=>String(p.activo)===est);
+
+      if(q){
+        list = list.filter(p =>
+          String(p.codigo??"").toLowerCase().includes(q) ||
+          String(p.nombre??"").toLowerCase().includes(q)
+        );
+      }
+
+      if(ord==="nuevo") list.sort((a,b)=>Number(b.id)-Number(a.id));
+      if(ord==="nombre") list.sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre)));
+      if(ord==="precioAsc") list.sort((a,b)=>Number(a.precio)-Number(b.precio));
+      if(ord==="precioDesc") list.sort((a,b)=>Number(b.precio)-Number(a.precio));
+      if(ord==="stockDesc") list.sort((a,b)=>Number(b.stock)-Number(a.stock));
+
+      lblCount.textContent = list.length;
+
+      tbody.innerHTML = list.map(p=>`
+        <tr>
+          <td class="fw-semibold">${p.codigo ?? ""}</td>
+          <td>${p.nombre ?? ""}</td>
+          <td class="text-end">${money(p.precio)}</td>
+          <td class="text-end">${Number(p.stock ?? 0)}</td>
+          <td>${estadoBadge(p.activo)}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary me-1" onclick='editar(${JSON.stringify(p)})'>Editar</button>
+            <button class="btn btn-sm btn-outline-secondary me-1" onclick='toggleActivo(${p.id})'>Estado</button>
+            <button class="btn btn-sm btn-outline-danger" onclick='eliminar(${p.id})'>Eliminar</button>
+          </td>
+        </tr>
+      `).join("");
+
+      emptyState.classList.toggle("d-none", list.length !== 0);
+    }
+
+    async function cargar(){
+      showLoading(true);
+      try{
+        productos = await getJSON("c=producto&a=index");
+        applyFilters();
+      }catch(e){
+        showAlert(e.message || "Error cargando productos", "danger");
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    window.editar = (p)=>{
+      resetForm();
+      modalTitle.textContent = "Editar producto";
+      id.value=p.id;
+      codigo.value=p.codigo??"";
+      nombre.value=p.nombre??"";
+      precio.value=p.precio??"";
+      stock.value=p.stock??0;
+      activo.value=String(p.activo??1);
+      modal.show();
+    };
+
+    window.eliminar = async (idProd)=>{
+      if(!confirm("¿Eliminar producto?")) return;
+      try{
+        await deleteReq(`c=producto&a=delete&id=${idProd}`);
+        showAlert("Producto eliminado", "success");
+        cargar();
+      }catch(e){
+        showAlert(e.message || "No se pudo eliminar", "danger");
+      }
+    };
+
+    window.toggleActivo = async (idProd)=>{
+      const p = productos.find(x=>Number(x.id)===Number(idProd));
+      if(!p) return;
+      const nuevo = Number(p.activo)===1 ? 0 : 1;
+
+      try{
+        await putJSON("c=producto&a=update", {
+          id: p.id, codigo: p.codigo, nombre: p.nombre,
+          precio: p.precio, stock: p.stock, activo: nuevo
+        });
+        showAlert(`Estado actualizado a: ${nuevo===1 ? "Activo" : "Inactivo"}`, "success");
+        cargar();
+      }catch(e){
+        showAlert(e.message || "No se pudo actualizar", "danger");
+      }
+    };
+
+    document.getElementById("btnNuevo").onclick = ()=>{ resetForm(); modalTitle.textContent="Nuevo producto"; modal.show(); };
+    document.getElementById("btnRefrescar").onclick = cargar;
+
+    document.getElementById("btnGuardar").onclick = async ()=>{
+      clearWarn();
+      const payload = {
+        id: id.value ? Number(id.value) : null,
+        codigo: (codigo.value||"").trim(),
+        nombre: (nombre.value||"").trim(),
+        precio: precio.value!=="" ? Number(precio.value) : null,
+        stock: stock.value!=="" ? Number(stock.value) : 0,
+        activo: Number(activo.value)
+      };
+      if(!payload.codigo || !payload.nombre || payload.precio===null){ warn("Código, nombre y precio son obligatorios."); return; }
+
+      try{
+        if(payload.id){
+          await putJSON("c=producto&a=update", payload);
+          showAlert("Producto actualizado", "success");
+        }else{
+          await postJSON("c=producto&a=create", payload);
+          showAlert("Producto creado", "success");
+        }
+        modal.hide();
+        cargar();
+      }catch(e){
+        warn(e.message || "Error guardando");
+      }
+    };
+
+    txtBuscar.addEventListener("input", applyFilters);
+    selEstado.addEventListener("change", applyFilters);
+    selOrden.addEventListener("change", applyFilters);
+
+    cargar();
+  </script>
+</body>
+</html>
